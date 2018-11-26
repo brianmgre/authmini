@@ -19,6 +19,15 @@ const sessionConfig = {
   }
 };
 
+
+function protected(req, res, next){
+  if (req.session && req.session.username) {
+    next();
+  }else {
+    res.status(200).json({ message: 'you shall not pass'})
+  }
+};
+
 server.use(session(sessionConfig))
 
 server.use(express.json());
