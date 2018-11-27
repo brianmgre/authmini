@@ -8,6 +8,8 @@ const db = require('./database/dbConfig.js');
 const server = express();
 
 
+// token 
+
 function protected(req, res, next) {
     const token = req.headers.authorization;
     if (token) {
@@ -22,6 +24,18 @@ function protected(req, res, next) {
         });
     } else {
         res.status(401).json({ message: "You're not authorized" });
+    }
+};
+
+// verify role of user
+
+function checkRole(role) {
+    return function (req, res, next) {
+        if (req.decodedToken && req.decodedToken.roles.includes(role)) {
+            next()
+        } else {
+            res.status(403).json({ message: 'not authorized' })
+        }
     }
 };
 
@@ -40,13 +54,15 @@ function generateToken(user) {
     const jwtPayload = {
         ...user,
         hello: 'fsw14',
-        role: 'admin'
+        roles: ['admin', 'root']
     };
     const jwtOptions = {
         expiresIn: '1m',
     }
     return jwt.sign(jwtPayload, jwtSecret, jwtOptions)
 }
+
+// post 
 
 server.post('/api/login', (req, res) => {
     const creds = req.body;
@@ -83,7 +99,8 @@ server.post('/api/register', (req, res) => {
 
 
 // protect this route, only authenticated users should see it
-server.get('/api/users', protected, (req, res) => {
+
+server.get('/api/users', protected, checkRole('admin'), (req, res) => {
     db('users')
         .select('id', 'username')
         .then(users => {
@@ -91,5 +108,6 @@ server.get('/api/users', protected, (req, res) => {
         })
         .catch(err => res.send(err))
 });
+
 
 server.listen(3300, () => console.log('\nrunning on port 3300\n'));
