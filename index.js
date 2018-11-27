@@ -28,7 +28,7 @@ const sessionConfig = {
 };
 
 function protected(req, res, next) {
-  if (req.session && req.session.username) {
+  if (req.session && req.session.userId) {
     next();
   } else {
     res.status(200).json({ message: 'not authorized' })
@@ -51,7 +51,7 @@ server.post('/api/login', (req, res) => {
     .first()
     .then(user => {
       if (user && bcrypt.compareSync(creds.password, user.password)) {
-        req.session.username = user.username
+        req.session.userId = user.id
         res.status(200).json({ message: 'welcome' })
       } else {
         res.status(401).json({ message: 'nope' })
@@ -69,7 +69,7 @@ server.post('/api/register', (req, res) => {
   db('users')
     .insert(creds)
     .then(ids => {
-      req.session.username = creds.username
+      req.session.username  = creds.username
       res.status(201).json(ids);
     })
     .catch(err =>
