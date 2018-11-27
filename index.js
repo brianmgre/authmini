@@ -20,11 +20,11 @@ const sessionConfig = {
 };
 
 
-function protected(req, res, next){
+function protected(req, res, next) {
   if (req.session && req.session.username) {
     next();
-  }else {
-    res.status(200).json({ message: 'you shall not pass'})
+  } else {
+    res.status(200).json({ message: 'not authorized' })
   }
 };
 
@@ -62,6 +62,7 @@ server.post('/api/register', (req, res) => {
   db('users')
     .insert(creds)
     .then(ids => {
+      req.session.username = creds.username
       res.status(201).json(ids);
     })
     .catch(err =>
@@ -69,16 +70,27 @@ server.post('/api/register', (req, res) => {
     )
 });
 
+server.get('/api/logout', (req, res) => {
+  if (req.session) {
+    req.session.destroy(err => {
+      if (err) {
+        res.json('you cannot leave');
+      } else {
+        res.json('Goodbye');
+      }
+    });
+  }
+});
+
 // protect this route, only authenticated users should see it
-server.get('/api/users', (req, res) => {
-  req.session && req.session.username
-    ? db('users')
-      .select('id', 'username')
-      .then(users => {
-        res.json(users);
-      })
-      .catch(err => res.send(err))
-    : res.status(401).json('not authorized');
+server.get('/api/users', protected, (req, res) => {
+  console.log(req.session);
+  db('users')
+    .select('id', 'username')
+    .then(users => {
+      res.json(users);
+    })
+    .catch(err => res.send(err))
 });
 
 server.listen(3300, () => console.log('\nrunning on port 3300\n'));
